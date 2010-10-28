@@ -70,7 +70,7 @@ def CreatePrefs():
     Prefs.Add(id='loginemail', type='text', default='', label='Login Email')
     Prefs.Add(id='password', type='text', default='', label='Password', option='hidden')
     Prefs.Add(id='cookieallow', type='bool', default=False, label='Allow Netflix Cookie')
-    Prefs.Add(id='safemode', type='bool', default=False, label='Safe Mode (try if video wont play)')
+    Prefs.Add(id='safemode', type='bool', default=False, label='Safe Mode (try if video won\'t play)')
 
 def SetRating(key, rating):
     global __ratingCache
