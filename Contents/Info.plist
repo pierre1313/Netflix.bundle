@@ -26,6 +26,13 @@
 	</array>
 	<key>PlexPluginDebug</key>
 	<string>1</string>
+	<key>PlexClientCapabilities</key>
+	<dict>
+		<key>protocols</key>
+		<array>
+			<string>webkit</string>
+		</array>
+	</dict>
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
 </dict>
