@@ -107,7 +107,7 @@ class OAuthRequest(object):
         except:
             raise OAuthError('Parameter not found: %s' % parameter)
 
-    def _get_timestamp_nonce(self):
+    def get_timestamp_nonce(self):
         return self.get_parameter('oauth_timestamp'), self.get_parameter('oauth_nonce')
 
     # get any non-oauth parameters
@@ -185,19 +185,19 @@ class OAuthRequest(object):
             if auth_header.index('OAuth') > -1:
                 try:
                     # get the parameters from the header
-                    header_params = OAuthRequest._split_header(auth_header)
+                    header_params = OAuthRequest.split_header(auth_header)
                     parameters.update(header_params)
                 except:
                     raise OAuthError('Unable to parse OAuth parameters from Authorization header.')
 
         # GET or POST query string
         if query_string:
-            query_params = OAuthRequest._split_url_string(query_string)
+            query_params = OAuthRequest.split_url_string(query_string)
             parameters.update(query_params)
 
         # URL parameters
         param_str = urlparse.urlparse(http_url)[4] # query
-        url_params = OAuthRequest._split_url_string(param_str)
+        url_params = OAuthRequest.split_url_string(param_str)
         parameters.update(url_params)
 
         if parameters:
@@ -242,7 +242,7 @@ class OAuthRequest(object):
 
     # util function: turn Authorization: header into parameters, has to do some unescaping
     # @staticmethod
-    def _split_header(header):
+    def split_header(header):
         params = {}
         parts = header.split(',')
         for param in parts:
@@ -256,16 +256,16 @@ class OAuthRequest(object):
             # remove quotes and unescape the value
             params[param_parts[0]] = urllib.unquote(param_parts[1].strip('\"'))
         return params
-    _split_header = staticmethod(_split_header)
+    split_header = staticmethod(split_header)
     
     # util function: turn url string into parameters, has to do some unescaping
     # @staticmethod
-    def _split_url_string(param_str):
+    def split_url_string(param_str):
         parameters = cgi.parse_qs(param_str, keep_blank_values=False)
         for k, v in parameters.iteritems():
             parameters[k] = urllib.unquote(v[0])
         return parameters
-    _split_url_string = staticmethod(_split_url_string)
+    split_url_string = staticmethod(split_url_string)
 
 # OAuthServer is a worker to check a requests validity against a data store
 class OAuthServer(object):
@@ -293,12 +293,12 @@ class OAuthServer(object):
     def fetch_request_token(self, oauth_request):
         try:
             # get the request token for authorization
-            token = self._get_token(oauth_request, 'request')
+            token = self.get_token(oauth_request, 'request')
         except OAuthError:
             # no token required for the initial token request
-            version = self._get_version(oauth_request)
-            consumer = self._get_consumer(oauth_request)
-            self._check_signature(oauth_request, consumer, None)
+            version = self.get_version(oauth_request)
+            consumer = self.get_consumer(oauth_request)
+            self.check_signature(oauth_request, consumer, None)
             # fetch a new token
             token = self.data_store.fetch_request_token(consumer)
         return token
@@ -306,22 +306,22 @@ class OAuthServer(object):
     # process an access_token request
     # returns the access token on success
     def fetch_access_token(self, oauth_request):
-        version = self._get_version(oauth_request)
-        consumer = self._get_consumer(oauth_request)
+        version = self.get_version(oauth_request)
+        consumer = self.get_consumer(oauth_request)
         # get the request token
-        token = self._get_token(oauth_request, 'request')
-        self._check_signature(oauth_request, consumer, token)
+        token = self.get_token(oauth_request, 'request')
+        self.check_signature(oauth_request, consumer, token)
         new_token = self.data_store.fetch_access_token(consumer, token)
         return new_token
 
     # verify an api call, checks all the parameters
     def verify_request(self, oauth_request):
         # -> consumer and token
-        version = self._get_version(oauth_request)
-        consumer = self._get_consumer(oauth_request)
+        version = self.get_version(oauth_request)
+        consumer = self.get_consumer(oauth_request)
         # get the access token
-        token = self._get_token(oauth_request, 'access')
-        self._check_signature(oauth_request, consumer, token)
+        token = self.get_token(oauth_request, 'access')
+        self.check_signature(oauth_request, consumer, token)
         parameters = oauth_request.get_nonoauth_parameters()
         return consumer, token, parameters
 
@@ -338,7 +338,7 @@ class OAuthServer(object):
         return {'WWW-Authenticate': 'OAuth realm="%s"' % realm}
 
     # verify the correct version request for this server
-    def _get_version(self, oauth_request):
+    def get_version(self, oauth_request):
         try:
             version = oauth_request.get_parameter('oauth_version')
         except:
@@ -348,7 +348,7 @@ class OAuthServer(object):
         return version
 
     # figure out the signature with some defaults
-    def _get_signature_method(self, oauth_request):
+    def get_signature_method(self, oauth_request):
         try:
             signature_method = oauth_request.get_parameter('oauth_signature_method')
         except:
@@ -362,7 +362,7 @@ class OAuthServer(object):
 
         return signature_method
 
-    def _get_consumer(self, oauth_request):
+    def get_consumer(self, oauth_request):
         consumer_key = oauth_request.get_parameter('oauth_consumer_key')
         if not consumer_key:
             raise OAuthError('Invalid consumer key.')
@@ -372,18 +372,18 @@ class OAuthServer(object):
         return consumer
 
     # try to find the token for the provided request token key
-    def _get_token(self, oauth_request, token_type='access'):
+    def get_token(self, oauth_request, token_type='access'):
         token_field = oauth_request.get_parameter('oauth_token')
         token = self.data_store.lookup_token(token_type, token_field)
         if not token:
             raise OAuthError('Invalid %s token: %s' % (token_type, token_field))
         return token
 
-    def _check_signature(self, oauth_request, consumer, token):
-        timestamp, nonce = oauth_request._get_timestamp_nonce()
-        self._check_timestamp(timestamp)
-        self._check_nonce(consumer, token, nonce)
-        signature_method = self._get_signature_method(oauth_request)
+    def check_signature(self, oauth_request, consumer, token):
+        timestamp, nonce = oauth_request.get_timestamp_nonce()
+        self.check_timestamp(timestamp)
+        self.check_nonce(consumer, token, nonce)
+        signature_method = self.get_signature_method(oauth_request)
         try:
             signature = oauth_request.get_parameter('oauth_signature')
         except:
@@ -395,7 +395,7 @@ class OAuthServer(object):
             raise OAuthError('Invalid signature. Expected signature base string: %s' % base)
         built = signature_method.build_signature(oauth_request, consumer, token)
 
-    def _check_timestamp(self, timestamp):
+    def check_timestamp(self, timestamp):
         # verify that timestamp is recentish
         timestamp = int(timestamp)
         now = int(time.time())
@@ -403,7 +403,7 @@ class OAuthServer(object):
         if lapsed > self.timestamp_threshold:
             raise OAuthError('Expired timestamp: given %d and now %s has a greater difference than threshold %d' % (timestamp, now, self.timestamp_threshold))
 
-    def _check_nonce(self, consumer, token, nonce):
+    def check_nonce(self, consumer, token, nonce):
         # verify that the nonce is uniqueish
         nonce = self.data_store.lookup_nonce(consumer, token, nonce)
         if nonce:

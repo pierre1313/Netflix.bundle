@@ -1,5 +1,4 @@
 import cgi, urllib, httplib, sys
-from PMS import Log
 import oauth, re
 
 NETFLIX_SERVER = 'api.netflix.com'
@@ -130,7 +129,7 @@ class NetflixRequest(object):
 
         return req.to_url()
 
-    def _make_query(self, access_token=None, method="GET", query="", params=None, returnURL=True):
+    def make_query(self, access_token=None, method="GET", query="", params=None, returnURL=True):
         if params is None:
             params = {}
 
@@ -168,18 +167,18 @@ class NetflixRequest(object):
 
         return req.to_url()
       
-    def _finish_query(self):
+    def finish_query(self):
         self.connection.close()
 
     def get_xml(self, method, url, params=None, token=None):
-        response = self._make_query(token, method, url, params)
+        response = self.make_query(token, method, url, params)
         data = response.read()
         status_code = response.status
         status_msg = response.reason
-        self._finish_query()
+        self.finish_query()
         return ((status_code, status_msg), data)
 
-    def _get_rating_id_from_title_id(self, title_id):
+    def get_rating_id_from_title_id(self, title_id):
         # simple method: extract from title_id
         matchstr = re.compile(r".*catalog/titles/.*?/(.*?)(/.*)?$",
                               re.IGNORECASE)
@@ -199,7 +198,7 @@ class NetflixRequest(object):
             'title_refs': ','.join(title_ids)
         }
         url = 'users/%s/ratings/title' % access_token.user_id
-        return self._make_query(access_token, 'GET', url, params, False)
+        return self.make_query(access_token, 'GET', url, params, False)
 
     def rate_title(self,title_id,rating,access_token):
 
@@ -215,7 +214,7 @@ class NetflixRequest(object):
             params = {
                 'rating': rating    
             }
-            r = self._make_query(access_token, 'PUT', url, params, False)
+            r = self.make_query(access_token, 'PUT', url, params, False)
             out = r.read()
             return self.get_title_rating(title_id,access_token)
         else:
@@ -225,7 +224,7 @@ class NetflixRequest(object):
                 'title_ref': title_id,
                 'rating': rating,
             }
-            r = self._make_query(access_token, 'POST', url, params, False)
+            r = self.make_query(access_token, 'POST', url, params, False)
             out = r.read()
             return self.get_title_rating(title_id,access_token)
         pass
@@ -234,7 +233,7 @@ class NetflixRequest(object):
         params = {
             'title_refs': title_id,
         }
-        r = self._make_query(access_token, 'GET', url, params, False)
+        r = self.make_query(access_token, 'GET', url, params, False)
 
         xml = r.read()
 
@@ -288,13 +287,13 @@ class NetflixRequest(object):
         if max_results is not None and max_results > 0:
             params['max_results'] = max_results
 
-        response = self._make_query(access_token, 'GET', url, params, urlBack)
+        response = self.make_query(access_token, 'GET', url, params, urlBack)
         return (response)
       
     def get_genres(self, access_token=None, returnURL=True):
         url = 'categories/genres'
         params = {}
-        response = self._make_query(access_token, 'GET', url, params, returnURL)
+        response = self.make_query(access_token, 'GET', url, params, returnURL)
         return (response)
       
     def get_title_matches(self, term, token=None):
@@ -312,7 +311,7 @@ class NetflixRequest(object):
     def get_user_feeds(self, access_token, urlBack=True):
         url = 'users/%s/feeds' % access_token.user_id 
         
-        response = self._make_query(access_token, 'GET', url, params=None, returnURL=urlBack)
+        response = self.make_query(access_token, 'GET', url, params=None, returnURL=urlBack)
         return (response)
       
     def get_user_titles_state(self, access_token, title_ids):

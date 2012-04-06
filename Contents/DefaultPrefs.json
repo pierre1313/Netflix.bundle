@@ -1,0 +1,27 @@
+[
+  {
+    "id": "loginemail",
+    "type": "text",
+    "label": "Login Email",
+    "default": ""
+  },
+  {
+    "id": "password",
+    "type": "text",
+    "option": "hidden",
+    "label": "Password",
+    "default": ""
+  },
+  {
+    "id": "cookieallow",
+    "type": "bool",
+    "label": "Allow Netflix Cookie",
+    "default": "False"
+  },
+  {
+    "id": "safemode",
+    "type": "bool",
+    "label": "Safe Mode (try if video won\'t play)",
+    "default": "False"
+  }
+]
